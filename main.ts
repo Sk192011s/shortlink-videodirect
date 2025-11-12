@@ -1,3 +1,6 @@
+import { serve } from "https://deno.land/std@0.203.0/http/server.ts";
+
+const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -71,3 +74,6 @@
   <footer>Created By Kairizy.</footer>
 </body>
 </html>
+`;
+
+serve((_req) => new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } }));
