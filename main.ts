@@ -15,8 +15,10 @@ const html = `
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
+      height: 100vh;
+      overflow: hidden; /* Scroll ဖျက်ခြင်း */
+      margin: 0;
+      padding: 0;
     }
     h1 {
       color: #333;
