@@ -19,12 +19,12 @@ const html = `
 html, body {
   height: 100%;
   margin: 0;
-  overflow: hidden;
+  overflow: hidden; /* disable scroll */
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
   display: flex;
   justify-content: center;
   align-items: center;
+  background: #eef2ff;
 }
 .container {
   width: 90%;
@@ -32,37 +32,39 @@ html, body {
   background: #fff;
   padding: 40px;
   border-radius: 20px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
   text-align: center;
 }
 h1 {
   font-size: 28px;
   margin-bottom: 25px;
-  color: #111827;
+  color: #1e293b;
 }
 .input-group {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
 }
 input {
-  flex: 1 1 auto;
-  min-width: 250px;
-  padding: 14px;
-  font-size: 18px;
-  border: 2px solid #d1d5db;
-  border-radius: 10px;
+  width: 320px;
+  height: 80px;
+  padding: 10px;
+  font-size: 22px;
+  border: 2px solid #94a3b8;
+  border-radius: 12px;
+  text-align: center;
   transition: 0.3s;
 }
 input:focus {
   border-color: #4f46e5;
-  box-shadow: 0 0 5px rgba(79,70,229,0.5);
+  box-shadow: 0 0 8px rgba(79,70,229,0.4);
   outline: none;
 }
 button {
-  padding: 14px 22px;
-  font-size: 18px;
+  padding: 14px 28px;
+  font-size: 20px;
   background: #4f46e5;
   color: #fff;
   border: none;
@@ -73,20 +75,20 @@ button {
 button:hover {
   background: #4338ca;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 #result {
   margin-top: 25px;
   font-size: 18px;
-  color: #111;
   word-break: break-word;
+  color: #111;
 }
 .copy-btn {
-  padding: 6px 12px;
+  padding: 8px 14px;
   margin-left: 10px;
   font-size: 16px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 8px;
   border: none;
   background: #10b981;
   color: #fff;
@@ -102,24 +104,18 @@ button:hover {
   font-size: 16px;
 }
 .change-box {
-  margin-top: 35px;
-  background: #f3f4f6;
-  padding: 16px;
+  margin-top: 30px;
+  padding: 15px;
+  border: 2px dashed #4f46e5;
   border-radius: 10px;
+  background: #eef2ff;
 }
-.change-btn {
+.change-box button {
   background: #2563eb;
-  color: #fff;
-  padding: 12px 20px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  transition: 0.3s;
+  font-size: 18px;
 }
-.change-btn:hover {
+.change-box button:hover {
   background: #1d4ed8;
-  transform: translateY(-2px);
 }
 </style>
 </head>
@@ -132,8 +128,9 @@ button:hover {
   </div>
   <div id="result"></div>
   <div id="warning" class="warning"></div>
+
   <div class="change-box">
-    <button class="change-btn" onclick="window.location.href='https://kairizyyoteshin-media.deno.dev/'">Change Video</button>
+    <button onclick="window.location.href='https://kairizyyoteshin-media.deno.dev/'">Change Video</button>
   </div>
 </div>
 
@@ -145,16 +142,14 @@ document.getElementById("generate").onclick = async () => {
   warningEl.textContent = "";
   resultEl.innerHTML = "";
 
-  if (!url) return warningEl.textContent = "⚠️ Please enter a URL";
-  if (!/^https?:\\/\\//.test(url)) return warningEl.textContent = "⚠️ URL must start with http:// or https://";
+  if(!url) return warningEl.textContent="⚠️ Please enter a URL";
+  if(!/^https?:\\/\\//.test(url)) return warningEl.textContent="⚠️ URL must start with http:// or https://";
 
   const resp = await fetch('/new?url=' + encodeURIComponent(url));
   const text = await resp.text();
   resultEl.innerHTML = text + '<button class="copy-btn" onclick="copyText()">Copy</button>';
-  window.copyText = () => {
-    navigator.clipboard.writeText(text).then(() => alert("Copied!"));
-  };
-};
+  window.copyText = () => { navigator.clipboard.writeText(text).then(()=>alert("Copied!")); }
+}
 </script>
 </body>
 </html>
@@ -172,7 +167,7 @@ serve(async (req) => {
     if (!/^https?:\/\//.test(long))
       return new Response("URL must start with http:// or https://", { status: 400 });
 
-    let code, tries = 0;
+    let code: string, tries = 0;
     do {
       code = genCode(6);
       const existing = await kv.get(["proxy", code]);
@@ -181,7 +176,8 @@ serve(async (req) => {
     } while (tries < 20);
 
     await kv.set(["proxy", code], { url: long, created: Date.now() });
-    return new Response(`https://${url.host}/p/${code}`, {
+
+    return new Response(\`https://\${url.host}/p/\${code}\`, {
       headers: { "content-type": "text/plain" },
     });
   }
@@ -193,16 +189,16 @@ serve(async (req) => {
     const record = await kv.get(["proxy", code]);
     if (!record.value) return new Response("Not found", { status: 404 });
 
-    const target = record.value.url;
+    const target = (record.value as any).url as string;
     if (!/^https?:\/\//.test(target))
       return new Response("Invalid target URL", { status: 400 });
 
     const range = req.headers.get("range");
-    const headers = {};
+    const headers: Record<string, string> = {};
     if (range) headers["Range"] = range;
     headers["User-Agent"] = "Mozilla/5.0 (compatible; DenoProxy/1.0)";
 
-    let upstream;
+    let upstream: Response;
     try {
       upstream = await fetch(target, { method: "GET", headers, redirect: "follow" });
     } catch {
@@ -210,23 +206,26 @@ serve(async (req) => {
     }
 
     if (!upstream.ok && upstream.status !== 206)
-      return new Response(`Upstream error: ${upstream.status}`, { status: 502 });
+      return new Response(\`Upstream error: \${upstream.status}\`, { status: 502 });
 
     const respHeaders = new Headers();
     const ct = upstream.headers.get("content-type") ?? "application/octet-stream";
     respHeaders.set("Content-Type", ct);
     const cl = upstream.headers.get("content-length");
     if (cl) respHeaders.set("Content-Length", cl);
-    const ar = upstream.headers.get("accept-ranges");
-    if (ar) respHeaders.set("Accept-Ranges", ar);
-    const cr = upstream.headers.get("content-range");
-    if (cr) respHeaders.set("Content-Range", cr);
+    const acceptRanges = upstream.headers.get("accept-ranges");
+    if (acceptRanges) respHeaders.set("Accept-Ranges", acceptRanges);
+    const contentRange = upstream.headers.get("content-range");
+    if (contentRange) respHeaders.set("Content-Range", contentRange);
     respHeaders.set("Cache-Control", "no-store");
     respHeaders.set("Access-Control-Allow-Origin", "*");
     respHeaders.set("Access-Control-Allow-Methods", "GET,OPTIONS");
     respHeaders.set("Access-Control-Allow-Headers", "Range");
 
-    return new Response(upstream.body, { status: upstream.status, headers: respHeaders });
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: respHeaders,
+    });
   }
 
   return new Response("Not found", { status: 404 });
